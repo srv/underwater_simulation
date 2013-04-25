@@ -9,8 +9,34 @@
 #include "VirtualSLSProjector.h"
 #include "UWSimUtils.h"
 #include "osg/BlendFunc"
+#include <osgDB/FileNameUtils>
+#include <osgOcean/ShaderManager>
+#include <osgDB/FileUtils>
+#include <osgDB/fstream>
+#include <osgDB/Registry>
 #include <iostream>
 #include <assert.h>
+
+bool VirtualSLSProjector::loadShaderSource(osg::Shader* obj, const std::string& fileName )
+{
+  std::string fqFileName = osgDB::findDataFile(fileName);
+  if( fqFileName.length() == 0 )
+  {
+    std::cout << "File \"" << fileName << "\" not found." << std::endl;
+    return false;
+  }
+  bool success = obj->loadShaderSourceFromFile( fqFileName.c_str());
+  if ( !success  )
+  {
+    std::cout << "Couldn't load file: " << fileName << std::endl;
+    return false;
+  }
+  else
+  {
+    std::cout << "File " << fileName << " has been loaded correctly!" << std::endl;
+    return true;
+  }
+}
 
 VirtualSLSProjector::VirtualSLSProjector(){
     osg::ref_ptr<osg::Node> node = new osg::Node;
@@ -36,7 +62,7 @@ void VirtualSLSProjector::init(std::string name, osg::Node *root, osg::Node *nod
     this->image_name = image_name;
     this->visible = visible;
     this->lightNum = 0;
-    this->textureUnit = 1;//1;
+    this->textureUnit = 1;
     osg::Vec3 position(0.0f,0.0f,0.0f);
     //osg::Vec3 direction(1.0f, 0.0f, 0.0f);
     osg::Vec3 direction(0.0f, 0.0f, 1.0f);//NEW CONVENTION
@@ -132,8 +158,29 @@ osg::StateSet* VirtualSLSProjector::createSLDecoratorState(osg::StateSet* states
     //stateset->setMode( GL_BLEND, osg::StateAttribute::ON );
     stateset->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
     //stateset->setAttributeAndModes( blendFunc, osg::StateAttribute::ON );
-    
+ 
 
+    std::cout << "Going to read shaders maybe?" << std::endl;
+
+    // Load shaders!
+    /*osg::Program* projProg(new osg::Program);
+    osg::Shader* projVertexShader( new osg::Shader(osg::Shader::VERTEX));
+    osg::Shader* projFragShader( new osg::Shader(osg::Shader::FRAGMENT));
+    projProg->addShader(projVertexShader);
+    projProg->addShader(projFragShader);
+    loadShaderSource(projVertexShader, "vertex.vert");
+    loadShaderSource(projFragShader, "fragment.frag");
+    stateset->setAttributeAndModes(projProg, osg::StateAttribute::ON);*/
+
+	static const char model_vertex[]   = "vertex.vert";
+	static const char model_fragment[] = "fragment.frag";
+	osg::ref_ptr<osg::Program> projProg = osgOcean::ShaderManager::instance().createProgram("robot_shader", model_vertex, model_fragment, model_vertex, model_fragment);
+    
+    std::cout << projProg->getNumShaders() << std::endl;
+
+    stateset->setAttributeAndModes(projProg, osg::StateAttribute::ON);
+
+    std::cout << "Are shaders read?" << std::endl;
 
     return stateset;
 }

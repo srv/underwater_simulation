@@ -400,6 +400,9 @@ void PATToROSOdom::publish() {
     osg::Matrixd mat=transform->getMatrix();
     osg::Vec3d pos=mat.getTrans();
     osg::Quat rot=mat.getRotate();
+    
+    odom.header.frame_id = "world";
+    odom.child_frame_id = "base_link";
 
     odom.pose.pose.position.x=pos.x();
     odom.pose.pose.position.y=pos.y();

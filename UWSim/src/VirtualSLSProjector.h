@@ -39,6 +39,8 @@ public:
     virtual void init(std::string name, osg::Node *root, osg::Node *node, std::string image_name, double range, double fov, bool visible);
     osg::Node* createSLNode(const osg::Vec3& position, const osg::Vec3& direction, float angle, unsigned int lightNum, unsigned int textureUnit);
 	osg::StateSet* createSLDecoratorState(osg::StateSet* stateset, unsigned int lightNum, unsigned int textureUnit);
+private:
+    bool loadShaderSource(osg::Shader* obj, const std::string& fileName);
 };
 
 #endif
