@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="girona500">
+	<xacro:macro name="pose" params="link x y z roll pitch yaw">
+    <relativeTo> ${link} </relativeTo>
+    <position>
+      <x> ${x} </x>
+      <y> ${y} </y>
+      <z> ${z} </z>
+    </position>
+    <orientation>
+      <r> ${roll} </r>
+      <p> ${pitch} </p>
+      <y> ${yaw} </y>
+    </orientation>
+  </xacro:macro>
+
+  <xacro:macro name="camera_sensor" params="name link resw resh f x y z roll pitch yaw">
+    <virtualCamera>
+      <name> ${name} </name>
+      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <resw> ${resw} </resw>
+      <resh> ${resh} </resh>
+      <parameters>
+        <fx> ${f}      </fx>
+        <fy> ${f}      </fy>
+        <x0> ${resw/2} </x0>
+        <y0> ${resh/2} </y0>
+        <f>  10        </f>
+        <n>   0.8      </n>
+        <k>   0        </k>
+      </parameters>
+    </virtualCamera>
+  </xacro:macro>
+
+  <xacro:macro name="depth_camera_sensor" params="name link resw resh f x y z roll pitch yaw">
+    <virtualRangeImage>
+      <name> ${name} </name>
+      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <resw> ${resw} </resw>
+      <resh> ${resh} </resh>
+      <parameters>
+        <fx> ${f}      </fx>
+        <fy> ${f}      </fy>
+        <x0> ${resw/2} </x0>
+        <y0> ${resh/2} </y0>
+        <f>  10        </f>
+        <n>   0.8      </n>
+        <k>   0        </k>
+      </parameters>
+    </virtualRangeImage>
+  </xacro:macro>
+
+  <xacro:macro name="range_sensor" params="name link x y z roll pitch yaw range">
+    <rangeSensor>
+      <name> ${name} </name>
+      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <range> ${range} </range>
+      <visible> 0 </visible>
+    </rangeSensor>
+  </xacro:macro>
+
+  <xacro:macro name="imu_sensor" params="name link x y z roll pitch yaw std_dev">
+    <imu>
+      <name> ${name} </name>
+      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <std> ${std_dev} </std>
+    </imu>
+  </xacro:macro>
+
+  <xacro:macro name="pressure_sensor" params="name link x y z roll pitch yaw std_dev">
+    <pressureSensor>
+      <name> ${name} </name>
+      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <std> ${std_dev} </std>
+    </pressureSensor>
+  </xacro:macro>
+
+  <xacro:macro name="gps_sensor" params="name link x y z roll pitch yaw std_dev">
+    <gpsSensor>
+      <name> ${name} </name>
+      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <std> ${std_dev} </std>
+    </gpsSensor>
+  </xacro:macro>
+
+  <xacro:macro name="dvl_sensor" params="name link x y z roll pitch yaw std_dev">
+    <dvlSensor>
+      <name> ${name} </name>
+      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <std> ${std_dev} </std>
+    </dvlSensor>
+  </xacro:macro>
+
+  <xacro:macro name="bowtech_stereo_pair">
+    <xacro:camera_sensor name="bowtech1" link="part0" resw="320" resh="240" f="160" x="-0.2" y="-0.1" z="0" roll="0" pitch="0" yaw="${M_PI/2}"/>
+    <xacro:camera_sensor name="bowtech2" link="part0" resw="320" resh="240" f="160" x="-0.2" y="+0.1" z="0" roll="0" pitch="0" yaw="${M_PI/2}"/>
+  </xacro:macro>
+
+</robot>
