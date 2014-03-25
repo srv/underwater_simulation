@@ -3,4 +3,7 @@
 
 	<property name="M_PI" value="3.1415926535897931" />
 
+	<property name="ns" value="uwsim" />
+	<property name="vehicle_name" value="girona500" />
+
 </robot>

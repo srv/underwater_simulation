@@ -1,7 +1,62 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="girona500">
-	<xacro:macro name="pose" params="link x y z roll pitch yaw">
-    <relativeTo> ${link} </relativeTo>
+
+	<xacro:macro name="default_ocean">
+		<oceanState>
+	      <windx> 0.04 </windx>
+	      <windy> 0.04 </windy>
+	      <windSpeed> 12 </windSpeed>
+	      <depth> 1000 </depth>
+	      <reflectionDamping> 0.35 </reflectionDamping>
+	      <waveScale> 1e-7 </waveScale>
+	      <isNotChoppy> 0 </isNotChoppy>
+	      <choppyFactor> 2.5 </choppyFactor>
+	      <crestFoamHeight> 2.2 </crestFoamHeight>
+	      <oceanSurfaceHeight> 0 </oceanSurfaceHeight>
+	      <fog>
+	        <density> 0.1</density>
+	        <color>
+	          <r>0</r>
+	          <g>0.05</g>
+	          <b>0.3</b>
+	        </color>
+	      </fog>
+	      <color>
+	        <r>0.0</r>
+	        <g>0.05</g>
+	        <b>0.3</b>
+	      </color>
+	      <attenuation>
+	        <r>0.015</r>
+	        <g>0.0075 </g>
+	        <b> 0.005 </b>
+	      </attenuation>
+	    </oceanState>
+	</xacro:macro>
+
+	<xacro:macro name="default_simulation_params">
+    <simParams>
+      <disableShaders> 0 </disableShaders>
+      <resw> 800 </resw>
+      <resh> 600 </resh>
+      <offsetp>
+        <x>0</x>
+        <y>0</y>
+        <z>0</z>
+      </offsetp>
+      <offsetr>
+        <x> 3.14</x>
+        <y> 0</y>
+        <z> -1.57 </z>
+      </offsetr>
+      <enablePhysics> 1 </enablePhysics>
+      <showTrajectory>
+        <target>girona500</target>
+      </showTrajectory>
+    </simParams>
+  </xacro:macro>
+
+	<xacro:macro name="pose" params="x y z roll pitch yaw">
     <position>
       <x> ${x} </x>
       <y> ${y} </y>
@@ -14,10 +69,15 @@
     </orientation>
   </xacro:macro>
 
+	<xacro:macro name="relative_pose" params="link x y z roll pitch yaw">
+    <relativeTo> ${link} </relativeTo>
+    <xacro:pose x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+  </xacro:macro>
+
   <xacro:macro name="camera_sensor" params="name link resw resh f x y z roll pitch yaw">
     <virtualCamera>
       <name> ${name} </name>
-      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <xacro:relative_pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
       <resw> ${resw} </resw>
       <resh> ${resh} </resh>
       <parameters>
@@ -35,7 +95,7 @@
   <xacro:macro name="depth_camera_sensor" params="name link resw resh f x y z roll pitch yaw">
     <virtualRangeImage>
       <name> ${name} </name>
-      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <xacro:relative_pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
       <resw> ${resw} </resw>
       <resh> ${resh} </resh>
       <parameters>
@@ -53,7 +113,7 @@
   <xacro:macro name="range_sensor" params="name link x y z roll pitch yaw range">
     <rangeSensor>
       <name> ${name} </name>
-      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <xacro:relative_pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
       <range> ${range} </range>
       <visible> 0 </visible>
     </rangeSensor>
@@ -62,7 +122,7 @@
   <xacro:macro name="imu_sensor" params="name link x y z roll pitch yaw std_dev">
     <imu>
       <name> ${name} </name>
-      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <xacro:relative_pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
       <std> ${std_dev} </std>
     </imu>
   </xacro:macro>
@@ -70,7 +130,7 @@
   <xacro:macro name="pressure_sensor" params="name link x y z roll pitch yaw std_dev">
     <pressureSensor>
       <name> ${name} </name>
-      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <xacro:relative_pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
       <std> ${std_dev} </std>
     </pressureSensor>
   </xacro:macro>
@@ -78,7 +138,7 @@
   <xacro:macro name="gps_sensor" params="name link x y z roll pitch yaw std_dev">
     <gpsSensor>
       <name> ${name} </name>
-      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <xacro:relative_pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
       <std> ${std_dev} </std>
     </gpsSensor>
   </xacro:macro>
@@ -86,7 +146,7 @@
   <xacro:macro name="dvl_sensor" params="name link x y z roll pitch yaw std_dev">
     <dvlSensor>
       <name> ${name} </name>
-      <xacro:pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <xacro:relative_pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
       <std> ${std_dev} </std>
     </dvlSensor>
   </xacro:macro>
@@ -96,4 +156,159 @@
     <xacro:camera_sensor name="bowtech2" link="part0" resw="320" resh="240" f="160" x="-0.2" y="+0.1" z="0" roll="0" pitch="0" yaw="${M_PI/2}"/>
   </xacro:macro>
 
+  <xacro:macro name="multibeam_sensor" params="name link x y z roll pitch yaw init_angle final_angle incr range">
+    <multibeamSensor>
+      <name> ${name} </name>
+      <xacro:relative_pose link="${link}" x="${x}" y="${y}" z="${z}" roll="${roll}" pitch="${pitch}" yaw="${yaw}" />
+      <initAngle>${init_angle}</initAngle>
+      <finalAngle>${final_angle}</finalAngle>
+      <angleIncr>${incr}</angleIncr>
+      <range>${range}</range>
+    </multibeamSensor>
+  </xacro:macro>
+
+  <xacro:macro name="force_sensor" params="name target offsetpx offsetpy offsetpz offsetrx offsetry offsetrz">
+    <ForceSensor>
+      <name> ${name} </name>
+      <target> ${target} </target>
+      <offsetp>
+        <x>${offsetpx}</x>
+        <y>${offsetpy}</y>
+        <z>${offsetpz}</z>
+      </offsetp>
+      <offsetr>
+        <x>${offsetrx}</x>
+        <y>${offsetry}</y>
+        <z>${offsetrz}</z>
+      </offsetr>
+    </ForceSensor>
+  </xacro:macro>
+
+  <xacro:macro name="default_position">
+  	<position>
+      <x> 0 </x>
+      <y> 0 </y>
+      <z> 0 </z>
+    </position>
+    <orientation>
+      <r> 0 </r>
+      <p> 0 </p>
+      <y> 0 </y>
+    </orientation>
+  </xacro:macro>
+
+  <xacro:macro name="add_object" params="name file offsetpx offsetpy offsetpz offsetrx offsetry offsetrz mass mesh">
+  	<object>
+	    <name>${name}</name>
+	    <file>${file}</file>
+	    <xacro:default_position/>
+	    <offsetp>
+        <x>${offsetpx}</x>
+        <y>${offsetpy}</y>
+        <z>${offsetpz}</z>
+      </offsetp>
+      <offsetr>
+        <x>${offsetrx}</x>
+        <y>${offsetry}</y>
+        <z>${offsetrz}</z>
+      </offsetr>
+	    <physics>
+	      <mass> ${mass} </mass>
+	      <collisionShapeType> ${mesh} </collisionShapeType>
+	    </physics>
+  	</object>
+  </xacro:macro>
+
+  <xacro:macro name="ros_interfaces">
+  	<rosInterfaces>
+  		<ROSOdomToPAT>
+  			<topic> /${ns}/dataNavigator </topic>
+  			<vehicleName> ${vehicle_name} </vehicleName>
+  		</ROSOdomToPAT>
+  		<WorldToROSTF>
+  			<rootName> world </rootName>
+  			<enableObjects> 1 </enableObjects>
+  			<rate>10</rate>
+  		</WorldToROSTF>
+  		<ArmToROSJointState>
+  			<topic>/${ns}/joint_state</topic>
+  			<vehicleName> ${vehicle_name} </vehicleName>
+  		</ArmToROSJointState>
+  		<ROSJointStateToArm>
+  			<topic>/${ns}/joint_state_command</topic>
+  			<vehicleName> ${vehicle_name} </vehicleName>
+  		</ROSJointStateToArm>
+
+  		<VirtualCameraToROSImage>
+  			<cameraName>bowtech1</cameraName>
+  			<imageTopic> /${ns}/camera1 </imageTopic>
+  			<infoTopic> /${ns}/camera1_info </infoTopic>
+  		</VirtualCameraToROSImage>
+
+  		<ROSTwistToPAT>
+  			<topic> /${ns}/twist</topic>
+  			<vehicleName> ${vehicle_name} </vehicleName>
+  		</ROSTwistToPAT>
+  		<RangeSensorToROSRange>
+  			<name>sonar</name>
+  			<topic> /${ns}/range </topic>
+  			<rate>10</rate>
+  		</RangeSensorToROSRange>
+  		<ROSPoseToPAT>
+  			<topic> /${ns}/pose</topic>
+  			<vehicleName> ${vehicle_name} </vehicleName>
+  		</ROSPoseToPAT>
+  		<ImuToROSImu>
+  			<name>imu</name>
+  			<topic>/${ns}/imu</topic>
+  			<rate>20</rate>
+  		</ImuToROSImu>
+  		<PressureSensorToROS>
+  			<name>pressure_sensor</name>
+  			<topic>/${ns}/pressure</topic>
+  			<rate>5</rate>
+  		</PressureSensorToROS>
+  		<GPSSensorToROS>
+  			<name>gps_sensor</name>
+  			<topic>/${ns}/gps</topic>
+  			<rate>1</rate>
+  		</GPSSensorToROS>
+  		<DVLSensorToROS>
+  			<name>dvl_sensor</name>
+  			<topic>/${ns}/dvl</topic>
+  			<rate>5</rate>
+  		</DVLSensorToROS>
+  		<RangeImageSensorToROSImage>
+  			<cameraName>depth_camera</cameraName>
+  			<imageTopic> /${ns}/rangecamera </imageTopic>
+  			<infoTopic> /${ns}/rangecamera_info </infoTopic>
+  		</RangeImageSensorToROSImage>
+  		<multibeamSensorToLaserScan>
+  			<name>multibeam</name>
+  			<topic>/${ns}/multibeam</topic>
+  		</multibeamSensorToLaserScan>
+  		<SimulatedDeviceROS>
+  			<echoROS>
+  				<name>g500_echo1</name>
+  				<topic>/${ns}/echo1</topic>
+  				<rate>1</rate>
+  			</echoROS>
+  		</SimulatedDeviceROS>
+  		<contactSensorToROS>
+  			<name>${vehicle_name}</name>
+  			<topic>/${ns}/contactSensor</topic>
+  			<rate> 100 </rate>
+  		</contactSensorToROS>
+  		<echoROS>
+  			<name>g500_echo2</name>
+  			<topic>/${ns}/echo2</topic>
+  			<rate>1</rate>
+  		</echoROS>
+  		<ForceSensorROS>
+  			<name>ForceG500</name>
+  			<topic>/${ns}/ForceSensor</topic>
+  			<rate>100</rate>
+  		</ForceSensorROS>
+  	</rosInterfaces>
+  </xacro:macro>
 </robot>
