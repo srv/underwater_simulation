@@ -25,11 +25,6 @@
 
 #include <osgOcean/OceanScene>
 
-#include "BulletHfFluid/btHfFluidRigidDynamicsWorld.h"
-#include "BulletHfFluid/btHfFluidRigidCollisionConfiguration.h"
-#include "BulletHfFluid/btHfFluid.h"
-#include "BulletHfFluid/btHfFluidBuoyantConvexShape.h"
-
 //#include <osgbCollision/GLDebugDrawer.h>
 
 #define UWSIM_DEFAULT_GRAVITY	btVector3(0,0,-1)
@@ -71,6 +66,12 @@ public:
 
 };
 
+//Adds tick callback manager which will do all stuff needed in pretick callback
+void preTickCallback(btDynamicsWorld *world, btScalar timeStep);
+
+//Adds tick callback manager which will do all stuff needed in posttick callback
+void postTickCallback(btDynamicsWorld *world, btScalar timeStep);
+
 class BulletPhysics : public osg::Referenced
 {
 
@@ -80,10 +81,10 @@ public:
     SHAPE_BOX, SHAPE_SPHERE, SHAPE_TRIMESH, SHAPE_COMPOUND_TRIMESH, SHAPE_COMPOUND_BOX, SHAPE_COMPOUND_CYLINDER
   } collisionShapeType_t;
 
-  btHfFluidRigidDynamicsWorld * dynamicsWorld;
+  btDiscreteDynamicsWorld * dynamicsWorld;
   //osgbCollision::GLDebugDrawer debugDrawer;
 
-  BulletPhysics(double configGravity[3], osgOcean::OceanTechnique* oceanSurf, PhysicsWater physicsWater);
+  BulletPhysics(PhysicsConfig physicsConfig, osgOcean::OceanTechnique* oceanSurf);
 
   void setGravity(btVector3 g)
   {
@@ -91,8 +92,6 @@ public:
   }
   btRigidBody* addObject(osg::MatrixTransform *root, osg::Node *node, CollisionDataType * data,
                          boost::shared_ptr<PhysicProperties> pp, osg::Node * colShape = NULL);
-  btRigidBody* addFloatingObject(osg::MatrixTransform *root, osg::Node *node, CollisionDataType * data,
-                                 boost::shared_ptr<PhysicProperties> pp, osg::Node * colShape = NULL);
 
   void stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep);
   void printManifolds();
@@ -109,22 +108,48 @@ public:
   }
   ;
 
+  //This class stores information related to different sources that need to be called in internal tick callbacks.
+  //To know force sensors.
+  class TickCallbackManager
+  {
+    private:
+      //Force sensor structures;
+      struct ForceSensorcbInfo
+      {
+	btRigidBody * copy, * target;
+        btVector3 linInitial, angInitial,linFinal, angFinal;
+      };
+      std::vector<ForceSensorcbInfo> forceSensors;
+    
+      void preTickForceSensors();
+      void postTickForceSensors();
+    public:
+
+      int substep; //Tracks number of substep;
+
+      TickCallbackManager(){};
+      int addForceSensor(btRigidBody * copy, btRigidBody * target);
+      void getForceSensorSpeed(int forceSensor, double linSpeed[3],double angSpeed[3]);
+      void physicsInternalPreProcessCallback(btScalar timeStep);
+      void physicsInternalPostProcessCallback(btScalar timeStep);
+  };
+
+
+  TickCallbackManager * callbackManager;
+
 private:
-  btHfFluidRigidCollisionConfiguration * collisionConfiguration;
+  btDefaultCollisionConfiguration * collisionConfiguration;
   btCollisionDispatcher * dispatcher;
   btConstraintSolver * solver;
   btBroadphaseInterface * inter;
-  btHfFluid* fluid;
 
   osgOcean::OceanTechnique* oceanSurface;
 
   void cleanManifolds();
   btCollisionShape* GetCSFromOSG(osg::Node * node, collisionShapeType_t ctype);
-  btConvexShape* GetConvexCSFromOSG(osg::Node * node, collisionShapeType_t ctype);
-
-  void updateOceanSurface();
 
 };
 
-#endif
+
+#endif	
 

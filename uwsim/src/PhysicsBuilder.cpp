@@ -20,7 +20,7 @@ PhysicsBuilder::PhysicsBuilder(SceneBuilder * scene_builder, ConfigFile config)
 void PhysicsBuilder::loadPhysics(SceneBuilder * scene_builder, ConfigFile config)
 {
 
-  physics = new BulletPhysics(config.gravity, scene_builder->scene->getOceanSurface(), config.physicsWater);
+  physics = new BulletPhysics(config.physicsConfig, scene_builder->scene->getOceanSurface());
   OSG_INFO << "Loading Physics" << std::endl;
 
   //Add physics to vehicles
@@ -50,6 +50,11 @@ void PhysicsBuilder::loadPhysics(SceneBuilder * scene_builder, ConfigFile config
                 if (!cs)
                   std::cerr << "Collision shape couldn't load, using visual to create physics" << std::endl;
               }
+	      //When creating the collision shape from geometry it uses child nodes, so we need to load the  
+	      // geometry on a clean node to avoid multiple collision shapes
+	      //TODO: avoid to reload the same geometry reusing visual geometry
+	      if(!cs)
+		cs = UWSimGeometry::loadGeometry(cfgVehicle->links[part].geom);
 
               if(cfgVehicle->links[part].mass > 0)  //If mass is set in config add it.
                 pp->mass=cfgVehicle->links[part].mass;
@@ -62,10 +67,6 @@ void PhysicsBuilder::loadPhysics(SceneBuilder * scene_builder, ConfigFile config
       osg::ref_ptr < NodeDataType > data = dynamic_cast<NodeDataType*>(link->getUserData());
       data->rigidBody = rigidBody;
       link->setUserData(data);
-
-      //TODO: Add node data type correctly(hand actuator).
-      //NodeDataType * data= new NodeDataType(floorbody,0);
-      //link->setUserData(data);
     }
     scene_builder->iauvFile[i]->urdf->physics = physics;
 
@@ -108,15 +109,8 @@ void PhysicsBuilder::loadPhysics(SceneBuilder * scene_builder, ConfigFile config
 
     btRigidBody* rigidBody;
 
-    //Objects  objects with simple shapes will be added with water physics and rest with physics.
-    if (config.physicsWater.enable && (pp->csType == "box" || pp->csType == "sphere"))
-    {
-      rigidBody = physics->addFloatingObject(mt, scene_builder->objects[i], colData, pp, cs);
-    }
-    else
-    {
-      rigidBody = physics->addObject(mt, scene_builder->objects[i], colData, pp, cs);
-    }
+    rigidBody = physics->addObject(mt, scene_builder->objects[i], colData, pp, cs);
+    
     //wMb->setUserData(data); 
 
     //store physiscs in object's data
