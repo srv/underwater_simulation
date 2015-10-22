@@ -23,6 +23,11 @@
 #include "osgbCollision/GLDebugDrawer.h"
 #include <uwsim/UWSimUtils.h>
 
+#include <osgDB/ReadFile>
+#include <osgGA/TrackballManipulator>
+#include "uwsim/oculus/oculusviewer.h"
+#include "uwsim/oculus/oculuseventhandler.h"
+
 using namespace std;
 
 //#include "BulletPhysics.h"

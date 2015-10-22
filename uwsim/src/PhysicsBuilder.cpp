@@ -104,12 +104,8 @@ void PhysicsBuilder::loadPhysics(SceneBuilder * scene_builder, ConfigFile config
 
     //Check if object has a collisionShape defined
     osg::Node * cs = NULL;
-    if (pp && pp->cs != ""){
-      boost::shared_ptr<Geometry> geom =(boost::shared_ptr<Geometry>) new Geometry;
-      geom->file=pp->cs;
-      geom->type=0;
-      cs = UWSimGeometry::loadGeometry(geom);
-    }
+    if (pp && pp->cs != "")
+      cs = UWSimGeometry::retrieveResource(pp->cs);
 
     btRigidBody* rigidBody;
 

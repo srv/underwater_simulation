@@ -1,0 +1,47 @@
+# - Find OculusSDK
+# Find the native OculusSDK headers and libraries.
+#
+#  OCULUS_SDK_INCLUDE_DIRS - where to find OVR.h, etc.
+#  OCULUS_SDK_LIBRARIES    - List of libraries when using OculusSDK.
+#  OCULUS_SDK_FOUND        - True if OculusSDK found.
+
+IF (DEFINED ENV{OCULUS_SDK_ROOT_DIR})
+    SET(OCULUS_SDK_ROOT_DIR "$ENV{OCULUS_SDK_ROOT_DIR}")
+ENDIF()
+SET(OCULUS_SDK_ROOT_DIR
+    "${OCULUS_SDK_ROOT_DIR}"
+    CACHE
+    PATH
+    "Root directory to search for OculusSDK")
+
+# Look for the header file.
+#FIND_PATH(OCULUS_SDK_INCLUDE_DIRS NAMES OVR.h HINTS ${OCULUS_SDK_ROOT_DIR}/LibOVR/Include )
+SET(OCULUS_SDK_INCLUDE_DIRS ${OCULUS_SDK_ROOT_DIR}/LibOVR/Include ${OCULUS_SDK_ROOT_DIR}/LibOVRKernel/Src)
+
+# Determine architecture
+IF(CMAKE_SIZEOF_VOID_P MATCHES "8")
+    SET(OCULUS_SDK_LIB_ARCH "x86_64" CACHE STRING "library location")
+ELSE()
+    SET(OCULUS_SDK_LIB_ARCH "i386" CACHE STRING "library location")
+ENDIF()
+MARK_AS_ADVANCED(OCULUS_SDK_LIB_ARCH)
+
+# Append "d" to debug libs on windows platform
+IF (WIN32)
+	SET(CMAKE_DEBUG_POSTFIX d)
+ENDIF()
+
+# Look for the library.
+FIND_LIBRARY(OCULUS_SDK_LIBRARY NAMES libOVR OVR HINTS ${OCULUS_SDK_ROOT_DIR} 
+  ${OCULUS_SDK_ROOT_DIR}/LibOVR/Lib/Linux/${OCULUS_SDK_LIB_ARCH}/Release )
+
+MARK_AS_ADVANCED(OCULUS_SDK_LIBRARY)
+
+SET(OCULUS_SDK_LIBRARIES ${OCULUS_SDK_LIBRARY}) 
+
+# handle the QUIETLY and REQUIRED arguments and set OCULUS_SDK_FOUND to TRUE if
+# all listed variables are TRUE
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(OculusSDK DEFAULT_MSG OCULUS_SDK_LIBRARIES OCULUS_SDK_INCLUDE_DIRS)
+
+MARK_AS_ADVANCED(OCULUS_SDK_LIBRARIES OCULUS_SDK_INCLUDE_DIRS)

@@ -13,6 +13,10 @@
 #include <uwsim/ObjectPicker.h>
 #include <uwsim/UWSimUtils.h>
 
+
+int ObjectPickerUpdateCallback::numPickers = 0;
+int ObjectPickerUpdateCallback::numIntersectedCatchables = 0;
+
 ObjectPicker::ObjectPicker() :
     VirtualRangeSensor()
 {
@@ -33,8 +37,6 @@ void ObjectPicker::init(std::string name, osg::Node *root, osg::Node *trackNode,
   this->trackNode = trackNode;
   //Add a switchable frame geometry on the sensor frame
   osg::ref_ptr < osg::Node > axis = UWSimGeometry::createSwitchableFrame();
-  //Add label to switchable frame
-  axis->asGroup()->addChild(UWSimGeometry::createLabel(name));
   this->trackNode->asGroup()->addChild(axis);
 
   this->range = range;
@@ -42,6 +44,7 @@ void ObjectPicker::init(std::string name, osg::Node *root, osg::Node *trackNode,
 
   //make this virtual ray track the node
   node_tracker = new ObjectPickerUpdateCallback(trackNode, range, visible, root, urdf);
+  ObjectPickerUpdateCallback::numPickers++;
   trackNode->setUpdateCallback((ObjectPickerUpdateCallback*)(node_tracker.get()));
   trackNode->asGroup()->addChild(node_tracker->geode);
 }

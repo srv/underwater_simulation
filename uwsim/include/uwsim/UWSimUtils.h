@@ -25,7 +25,6 @@
 #include <osgDB/Registry>
 #include <osgDB/FileNameUtils>
 #include <osg/Version>
-#include <osgText/Text>
 
 #include <btBulletDynamicsCommon.h>
 
@@ -140,7 +139,6 @@ public:
   static osg::Node* createOSGBox(osg::Vec3 size);
   static osg::Node* createOSGCylinder(double radius, double height);
   static osg::Node* createOSGSphere(double radius);
-  static osg::Node* createLabel(std::string text,double charSize=0.02, int bb=1, osg::Vec4 color=osg::Vec4(1,1,1,1) );
 
   static osg::Node * retrieveResource(std::string name);
   static osg::Node * loadGeometry(boost::shared_ptr<Geometry> geom);

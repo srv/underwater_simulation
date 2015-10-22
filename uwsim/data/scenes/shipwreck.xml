@@ -57,6 +57,8 @@
       <y>7 </y>
       <z>-10 </z>
     </lookAt>
+    <oculus> 1 </oculus>
+    <windshield> 0 </windshield>
   </camera>
 
  <vehicle>
@@ -81,7 +83,7 @@
     </orientation>
   </vehicle>
 
-  <vehicle>
+<!--  <vehicle>
     <name>girona500_TRIDENT</name>
     <file>data/scenes/g500ARM5.urdf</file>
     <jointValues>
@@ -101,7 +103,7 @@
       <p>0 </p>
       <y>1.57 </y>
     </orientation>
-  </vehicle>
+  </vehicle> -->
 
   <object>
     <name>terrain</name>

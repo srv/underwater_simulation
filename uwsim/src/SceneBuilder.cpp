@@ -13,6 +13,8 @@
 #include <uwsim/SceneBuilder.h>
 
 #include <osg/Notify>
+#include <osg/TriangleFunctor>
+#include <osg/ShapeDrawable>
 
 #include <string>
 #include <vector>
@@ -25,6 +27,7 @@
 #include <uwsim/TrajectoryVisualization.h>
 
 using namespace std;
+
 
 SceneBuilder::SceneBuilder()
 {
@@ -169,7 +172,6 @@ bool SceneBuilder::loadScene(ConfigFile config)
     {
       siauv->urdf->setJointPosition(vehicle.jointValues);
     }
-
   }
 
   //Add objects added in config file.
@@ -462,7 +464,15 @@ bool SceneBuilder::loadScene(ConfigFile config)
       for (size_t i = 0; i < ifaces.size(); ++i)
         ROSInterfaces.push_back(ifaces[i]);
     }
-
+    if(rosInterface.type==ROSInterfaceInfo::ObjectPickedToROS)
+    {   //Find corresponding VirtualRangeSensor Object on all the vehicles (look for objectPickers)
+ 	for (int j=0; j<nvehicle;j++)
+        {
+        	for (unsigned int c=0; c<iauvFile[j]->getNumObjectPickers(); c++)
+ 			if (iauvFile[j]->object_pickers[c].name==rosInterface.targetName)
+				iface=boost::shared_ptr<ObjectPickedToROS>(new ObjectPickedToROS(&(iauvFile[j]->object_pickers[c]),rosInterface.topic, rosInterface.rate));
+        }
+    }
     if (iface)
       ROSInterfaces.push_back(iface);
     config.ROSInterfaces.pop_front();
@@ -473,16 +483,10 @@ bool SceneBuilder::loadScene(ConfigFile config)
   {
     ShowTrajectory trajectory = config.trajectories.front();
 
-    osg::ref_ptr<TrajectoryUpdateCallback> node_tracker = new TrajectoryUpdateCallback(trajectory.color, 0.02,trajectory.lineStyle,
-        trajectory.timeWindow, root, scene->getOceanScene()->getNormalSceneMask() | scene->getOceanScene()->getReflectedSceneMask()
-        | scene->getOceanScene()->getRefractedSceneMask());
-
+    osg::ref_ptr<TrajectoryUpdateCallback> node_tracker = new TrajectoryUpdateCallback(trajectory.color, 0.02,trajectory.lineStyle, root);
     osg::Node * trackNode=findRN(trajectory.target,root);
     if(trackNode)
-    {
       trackNode->setUpdateCallback(node_tracker);
-      trajectories.push_back(trackNode);
-    }
     else
       OSG_FATAL << "Scene Builder: "<<trajectory.target<<" trajectory target not found, please check your XML."<<std::endl;
 

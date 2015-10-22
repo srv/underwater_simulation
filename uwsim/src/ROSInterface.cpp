@@ -995,90 +995,6 @@ void WorldToROSTF::publish()
          tfpub_->sendTransform(t2);
          tfpub_->sendTransform(t);  
       }
-
-      //publish Cameras
-      for(int j=0; j< iauvFile_[i].get()->camview.size();j++)
-      {
-        tf::Pose pose;
-        std::string parent;
-        tf::Pose OSGToTFconvention;
-        if(iauvFile_[i].get()->camview[j].getTFTransform(pose,parent))
-        {
-          OSGToTFconvention.setOrigin(tf::Vector3(0,0,0));
-          OSGToTFconvention.setRotation(tf::Quaternion(tf::Vector3(1,0,0),M_PI));//OSG convention is different to tf:
-          //Remember that in opengl/osg, the camera frame is a right-handed system with Z going backwards (opposite to the viewing direction) and Y up.
-          //While in tf convention, the camera frame is a right-handed system with Z going forward (in the viewing direction) and Y down.
-
-          for(int k=0;k<iauvFile_[i].get()->multibeam_sensors.size();k++) //check if camera comes from multibeam
-	    if(iauvFile_[i].get()->multibeam_sensors[k].name==iauvFile_[i].get()->camview[j].name)
-              OSGToTFconvention.setRotation(tf::Quaternion(tf::Vector3(0,1,0),M_PI/2));  //As we are using camera to simulate it, we need to rotate it
-
-          pose=pose*OSGToTFconvention;
-          tf::StampedTransform t(pose, getROSTime(),   "/"+iauvFile_[i].get()->name + "/" +parent, iauvFile_[i].get()->camview[j].name);
-          tfpub_->sendTransform(t);
-        }  
-      }
-
-      //publish imus
-      for(int j=0; j< iauvFile_[i].get()->imus.size();j++)
-      {
-        tf::Pose pose;
-        std::string parent;
-        if(iauvFile_[i].get()->imus[i].getTFTransform(pose,parent))
-        {
-          tf::StampedTransform t(pose, getROSTime(),   "/"+iauvFile_[i].get()->name + "/" +parent, iauvFile_[i].get()->imus[i].name);
-          tfpub_->sendTransform(t);
-        }  
-      }
-
-      //publish RangeSensor
-      for(int j=0; j< iauvFile_[i].get()->range_sensors.size();j++)
-      {
-        tf::Pose pose;
-        std::string parent;
-        if(iauvFile_[i].get()->range_sensors[i].getTFTransform(pose,parent))
-        {
-          tf::StampedTransform t(pose, getROSTime(),   "/"+iauvFile_[i].get()->name + "/" +parent, iauvFile_[i].get()->range_sensors[i].name);
-          tfpub_->sendTransform(t);
-        }  
-      }
-
-      //publish PressureSensor
-      for(int j=0; j< iauvFile_[i].get()->pressure_sensors.size();j++)
-      {
-        tf::Pose pose;
-        std::string parent;
-        if(iauvFile_[i].get()->pressure_sensors[i].getTFTransform(pose,parent))
-        {
-          tf::StampedTransform t(pose, getROSTime(),   "/"+iauvFile_[i].get()->name + "/" +parent, iauvFile_[i].get()->pressure_sensors[i].name);
-          tfpub_->sendTransform(t);
-        }  
-      }
-
-      //publish GPSSensor
-      for(int j=0; j< iauvFile_[i].get()->gps_sensors.size();j++)
-      {
-        tf::Pose pose;
-        std::string parent;
-        if(iauvFile_[i].get()->gps_sensors[i].getTFTransform(pose,parent))
-        {
-          tf::StampedTransform t(pose, getROSTime(),   "/"+iauvFile_[i].get()->name + "/" +parent, iauvFile_[i].get()->gps_sensors[i].name);
-          tfpub_->sendTransform(t);
-        }  
-      }
-
-      //publish DVLSensor
-      for(int j=0; j< iauvFile_[i].get()->dvl_sensors.size();j++)
-      {
-        tf::Pose pose;
-        std::string parent;
-        if(iauvFile_[i].get()->dvl_sensors[i].getTFTransform(pose,parent))
-        {
-          tf::StampedTransform t(pose, getROSTime(),   "/"+iauvFile_[i].get()->name + "/" +parent, iauvFile_[i].get()->dvl_sensors[i].name);
-          tfpub_->sendTransform(t);
-        }  
-      }
-
    }
 
    //Publish object frames
@@ -1101,13 +1017,33 @@ void WorldToROSTF::publish()
 
        tfpub_->sendTransform(t);
      }
-
    }
-
-
-
 }
 
+
+
 WorldToROSTF::~WorldToROSTF()
+{
+}
+
+/*------------------------------------------------------------------------------------------------*/
+
+ObjectPickedToROS::ObjectPickedToROS(ObjectPicker *op, std::string topic, int rate): ROSPublisherInterface(topic,rate), op(op) {
+}
+
+void ObjectPickedToROS::createPublisher(ros::NodeHandle &nh) {
+  ROS_INFO("ObjectPickedToROS publisher on topic %s",topic.c_str());
+  pub_ = nh.advertise<std_msgs::Bool>(topic, 1);
+}
+
+void ObjectPickedToROS::publish() {
+  if (op!=NULL) {
+    std_msgs::Bool msg;
+    msg.data = (op->node_tracker!=NULL) ? op->node_tracker->picked : false;
+    pub_.publish(msg);
+  }
+}
+  
+ObjectPickedToROS::~ObjectPickedToROS()
 {
 }

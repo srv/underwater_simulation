@@ -14,6 +14,7 @@
 #include <uwsim/UWSimUtils.h>
 #include <uwsim/TextHUD.h>
 #include <uwsim/EventHandler.h>
+#include <uwsim/OculusCameraManipulator.h>
 
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
@@ -27,6 +28,20 @@
 #include <osgWidget/WindowManager>
 #include <osgWidget/ViewerEventHandlers>
 #include <osg/GraphicsContext>
+
+#include <osg/Camera>
+#include <osg/ShapeDrawable>
+
+osg::Camera* createHUDCamera( )
+{
+	osg::ref_ptr<osg::Camera> camera = new osg::Camera;
+	camera->setName("ShieldCamera");
+	camera->setReferenceFrame( osg::Transform::ABSOLUTE_RF );
+	camera->setClearMask( GL_DEPTH_BUFFER_BIT );
+	camera->setRenderOrder( osg::Camera::POST_RENDER );
+	camera->setViewMatrixAsLookAt(osg::Vec3(0.0f,-5.0f,5.0f), osg::Vec3(),osg::Vec3(0.0f,1.0f,1.0f));
+	return camera.release();
+}
 
 ViewBuilder::ViewBuilder(ConfigFile &config, SceneBuilder *scene_builder, int *argc, char **argv)
 {
@@ -66,6 +81,18 @@ bool ViewBuilder::init(ConfigFile &config, SceneBuilder *scene_builder)
     freeMotion = true;
   }
 
+  oculus = config.oculus;
+  if (arguments->read("--oculus"))
+  {
+    oculus = true;
+  }
+
+  bool windshield = config.windshield;
+  if (arguments->read("--windshield"))
+  {
+    windshield = true;
+  }
+
   fullScreenNum = -1;
   if (!arguments->read("--fullScreen", fullScreenNum) && arguments->read("--fullScreen"))
   {
@@ -86,24 +113,27 @@ bool ViewBuilder::init(ConfigFile &config, SceneBuilder *scene_builder)
     }
   }
 
-  //Initialize viewer
+  OSG_INFO << "Setting main viewer" << std::endl;
   viewer = new osgViewer::Viewer();
   viewer->addEventHandler(new osgViewer::StatsHandler);
-  osg::ref_ptr < TextHUD > hud = new TextHUD;
-
   viewer->addEventHandler(scene_builder->getScene()->getOceanSceneEventHandler());
   viewer->addEventHandler(scene_builder->getScene()->getOceanSurface()->getEventHandler());
+  osg::ref_ptr < TextHUD > hud = new TextHUD;
 
-  //Set main camera position, lookAt, and other params
-  if (freeMotion)
-  {
-    osg::ref_ptr < osgGA::TrackballManipulator > tb = new osgGA::TrackballManipulator;
-    tb->setHomePosition(osg::Vec3f(config.camPosition[0], config.camPosition[1], config.camPosition[2]),
-                        osg::Vec3f(config.camLookAt[0], config.camLookAt[1], config.camLookAt[2]), osg::Vec3f(0, 0, 1));
-    viewer->setCameraManipulator(tb);
-  }
-  else
-  { //Main camera tracks an object
+  //Initialize viewer
+  if (!oculus)
+  { 
+    //We don't use Oculus with the UWSim.
+
+    //Set main camera position, lookAt, and other params
+    if (freeMotion)
+    {
+      osg::ref_ptr < osgGA::TrackballManipulator > tb = new osgGA::TrackballManipulator;
+      tb->setHomePosition(osg::Vec3f(config.camPosition[0], config.camPosition[1], config.camPosition[2]),
+                          osg::Vec3f(config.camLookAt[0], config.camLookAt[1], config.camLookAt[2]), osg::Vec3f(0, 0, 1));
+      viewer->setCameraManipulator(tb);
+    }
+
     findRoutedNode findRN(config.vehicleToTrack);
     findRN.find(scene_builder->getScene()->getScene());
 
@@ -130,112 +160,186 @@ bool ViewBuilder::init(ConfigFile &config, SceneBuilder *scene_builder)
                           osg::Vec3f(0, 0, 1));
       viewer->setCameraManipulator(tb);
     }
-  }
-  viewer->addEventHandler(new osgViewer::HelpHandler);
-  viewer->getCamera()->setName("MainCamera");
 
-  //Main camera projection parameters: view angle (fov), aspect ratio, fustrum near and far
-  if (config.camNear != -1 && config.camFar != -1)
-  {
-    OSG_INFO << "Setting custom near/far planes to " << config.camNear << " " << config.camFar << std::endl;
-    viewer->getCamera()->setComputeNearFarMode(osgUtil::CullVisitor::DO_NOT_COMPUTE_NEAR_FAR);
-    viewer->getCamera()->setProjectionMatrixAsPerspective(config.camFov, config.camAspectRatio, config.camNear,
-                                                          config.camFar);
+    viewer->addEventHandler(new osgViewer::HelpHandler);
+    viewer->getCamera()->setName("MainCamera");
+
+    //Main camera projection parameters: view angle (fov), aspect ratio, fustrum near and far
+    if (config.camNear != -1 && config.camFar != -1)
+    {
+      OSG_INFO << "Setting custom near/far planes to " << config.camNear << " " << config.camFar << std::endl;
+      viewer->getCamera()->setComputeNearFarMode(osgUtil::CullVisitor::DO_NOT_COMPUTE_NEAR_FAR);
+      viewer->getCamera()->setProjectionMatrixAsPerspective(config.camFov, config.camAspectRatio, config.camNear,
+                                                            config.camFar);
+    }
+    else
+    {
+      OSG_INFO << "Setting custom near/far planes to auto" << std::endl;
+      viewer->getCamera()->setProjectionMatrixAsPerspective(config.camFov, config.camAspectRatio, 1, 10);
+    }
+
+    viewer->setSceneData(scene_builder->getRoot());
+
+    // plnc: from here common for oculus and non-oculus
+    OSG_INFO << "Starting window manager..." << std::endl;
+    wm = new osgWidget::WindowManager(viewer, reswidth, resheight, 0xF0000000, 0);
+
+    OSG_INFO << "Setting widgets..." << std::endl;
+    wm->setPointerFocusMode(osgWidget::WindowManager::PFM_SLOPPY);
+    std::vector < osg::ref_ptr<osgWidget::Window> > camWidgets;
+    int dispx = 0;
+    int ncamwidgets = 0;
+    for (unsigned int j = 0; j < scene_builder->iauvFile.size(); j++)
+    {
+      for (unsigned int i = 0; i < scene_builder->iauvFile[j]->getNumCams(); i++)
+      {
+        if (scene_builder->iauvFile[j]->camview[i].widget)
+        {
+          camWidgets.push_back(scene_builder->iauvFile[j]->camview[i].getWidgetWindow());
+          camWidgets[ncamwidgets]->setX(dispx);
+          camWidgets[ncamwidgets]->setY(0);
+          dispx += scene_builder->iauvFile[j]->camview[i].width + 20;
+          wm->addChild(camWidgets[ncamwidgets]);
+          camWidgets[ncamwidgets]->hide();
+          ncamwidgets++;
+        }
+      }
+    }
+
+    viewer->addEventHandler(new SceneEventHandler(camWidgets, hud.get(), scene_builder->getScene(), scene_builder->ROSInterfaces, &config));
+
+    for (unsigned int i = 0; i < scene_builder->realcams.size(); i++)
+    {
+      wm->addChild(scene_builder->realcams[i]->getWidgetWindow());
+    }
+
+    osg::ref_ptr < osg::Group > appgroup = new osg::Group();
+    osg::ref_ptr < osg::Camera > appcamera = wm->createParentOrthoCamera();
+
+    appgroup->addChild(appcamera);
+
+    if (scene_builder->getRoot())
+      appgroup->addChild(scene_builder->getRoot());
+
+    viewer->addEventHandler(new osgWidget::MouseHandler(wm));
+    viewer->addEventHandler(new osgWidget::KeyboardHandler(wm));
+    viewer->addEventHandler(new osgWidget::ResizeHandler(wm, appcamera));
+    viewer->addEventHandler(new osgWidget::CameraSwitchHandler(wm, appcamera));
+    viewer->addEventHandler(new osgViewer::WindowSizeHandler());
+    viewer->addEventHandler(new osgGA::StateSetManipulator(viewer->getCamera()->getOrCreateStateSet()));
+
+
+    //If --disableTextures, force disabling textures
+    if (disableTextures)
+    {
+      for (unsigned int ii = 0; ii < 4; ii++)
+      {
+    #if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE)
+        viewer->getCamera()->getOrCreateStateSet()->setTextureMode(
+            ii, GL_TEXTURE_1D, osg::StateAttribute::OVERRIDE | osg::StateAttribute::OFF);
+    #endif
+        viewer->getCamera()->getOrCreateStateSet()->setTextureMode(
+            ii, GL_TEXTURE_2D, osg::StateAttribute::OVERRIDE | osg::StateAttribute::OFF);
+        viewer->getCamera()->getOrCreateStateSet()->setTextureMode(
+            ii, GL_TEXTURE_3D, osg::StateAttribute::OVERRIDE | osg::StateAttribute::OFF);
+        viewer->getCamera()->getOrCreateStateSet()->setTextureMode(
+            ii, GL_TEXTURE_RECTANGLE, osg::StateAttribute::OVERRIDE | osg::StateAttribute::OFF);
+        viewer->getCamera()->getOrCreateStateSet()->setTextureMode(
+            ii, GL_TEXTURE_CUBE_MAP, osg::StateAttribute::OVERRIDE | osg::StateAttribute::OFF);
+      }
+    }
+
+    wm->resizeAllWindows();
+    
+    viewer->setSceneData(appgroup);
+
+    for (unsigned int j = 0; j < scene_builder->iauvFile.size(); j++)
+      for (unsigned int i = 0; i < scene_builder->iauvFile[j]->devices->all.size(); i++)
+        scene_builder->iauvFile[j]->devices->all.at(i)->setViewBuilder(this);
+
+    // plnc: to here common for oculus and non-oculus
   }
   else
   {
-    OSG_INFO << "Setting custom near/far planes to auto" << std::endl;
-    viewer->getCamera()->setProjectionMatrixAsPerspective(config.camFov, config.camAspectRatio, 1, 10);
-  }
-
-  OSG_INFO << "Setting main viewer" << std::endl;
-  viewer->setSceneData(scene_builder->getRoot());
-
-  OSG_INFO << "Starting window manager..." << std::endl;
-  wm = new osgWidget::WindowManager(viewer, reswidth, resheight, 0xF0000000, 0);
-
-  OSG_INFO << "Setting widgets..." << std::endl;
-  wm->setPointerFocusMode(osgWidget::WindowManager::PFM_SLOPPY);
-  std::vector < osg::ref_ptr<osgWidget::Window> > camWidgets;
-  int dispx = 0;
-  int ncamwidgets = 0;
-  for (unsigned int j = 0; j < scene_builder->iauvFile.size(); j++)
-  {
-    for (unsigned int i = 0; i < scene_builder->iauvFile[j]->getNumCams(); i++)
+    // OCULUS RIFT: Open the HMD
+    findRoutedNode findRN(config.vehicleToTrack);
+    findRN.find(scene_builder->getScene()->getScene());
+    osg::ref_ptr < osg::Node > first = findRN.getFirst();
+    if (first.valid())
     {
-      if (scene_builder->iauvFile[j]->camview[i].widget)
-      {
-        camWidgets.push_back(scene_builder->iauvFile[j]->camview[i].getWidgetWindow());
-        camWidgets[ncamwidgets]->setX(dispx);
-        camWidgets[ncamwidgets]->setY(0);
-        dispx += scene_builder->iauvFile[j]->camview[i].width + 20;
-        wm->addChild(camWidgets[ncamwidgets]);
-        camWidgets[ncamwidgets]->hide();
-        ncamwidgets++;
-      }
+      //target to track found
+      osg::ref_ptr < osg::Node > emptyNode = new osg::Node;
+      osg::ref_ptr < osgGA::NodeTrackerManipulator > ntm = new osgGA::NodeTrackerManipulator;
+      first->asGroup()->addChild(emptyNode);
+      ntm->setTrackNode(emptyNode);
+      ntm->setTrackerMode(osgGA::NodeTrackerManipulator::NODE_CENTER);
+      ntm->setHomePosition(osg::Vec3d(config.camPosition[0], config.camPosition[1], config.camPosition[2]),
+                           osg::Vec3d(config.camLookAt[0], config.camLookAt[1], config.camLookAt[2]),
+                           osg::Vec3d(0, 0, 1));
+      viewer->setCameraManipulator(ntm);
+    } else {
+      // Create Trackball manipulator
+      osg::ref_ptr<osgGA::CameraManipulator> ocm = new osgGA::TrackballManipulator;
+      ocm->setHomePosition(osg::Vec3f(config.camPosition[0], config.camPosition[1], config.camPosition[2]),
+                           osg::Vec3f(config.camLookAt[0], config.camLookAt[1], config.camLookAt[2]), osg::Vec3f(0, 0, 1));
+      //ocm->setByMatrix(scene_builder->iauvFile[0]->baseTransform->getMatrix());
+      viewer->setCameraManipulator(ocm);
     }
-  }
-  viewer->addEventHandler(
-      new SceneEventHandler(camWidgets, hud.get(), scene_builder, &config));
 
-  for (unsigned int i = 0; i < scene_builder->realcams.size(); i++)
-  {
-    wm->addChild(scene_builder->realcams[i]->getWidgetWindow());
-  }
+    // Oculus device
+    float nearClip = 0.01f;
+    float farClip = 10000.0f;
+    float pixelsPerDisplayPixel = 1.0;
+    bool useTimewarp = true;
+    float worldUnitsPerMetre = 1.0f;
+		oculusDevice = new OculusDevice(nearClip, farClip, useTimewarp, pixelsPerDisplayPixel, worldUnitsPerMetre);
 
-  //viewer->addEventHandler( new SceneEventHandler(NULL, hud.get(), scene ) );
+    // Get the suggested context traits
+    osg::ref_ptr<osg::GraphicsContext::Traits> traits = oculusDevice->graphicsContextTraits();
 
-  osg::ref_ptr < osg::Group > appgroup = new osg::Group();
-  osg::ref_ptr < osg::Camera > appcamera = wm->createParentOrthoCamera();
+		// Create a graphic context based on our desired traits
+		osg::ref_ptr<osg::GraphicsContext> gc = osg::GraphicsContext::createGraphicsContext(traits);
+		if (!gc) {
+			osg::notify(osg::NOTICE) << "Error, GraphicsWindow has not been created successfully" << std::endl;
+			return 1;
+		}
 
-  appgroup->addChild(appcamera);
+    // Attach to window, needed for direct mode
+    oculusDevice->attachToWindow(gc);
 
-  if (scene_builder->getRoot())
-    appgroup->addChild(scene_builder->getRoot());
+		if (gc.valid()) {
+			gc->setClearColor(osg::Vec4(0.2f, 0.2f, 0.4f, 1.0f));
+			gc->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
 
-  viewer->addEventHandler(new osgWidget::MouseHandler(wm));
-  viewer->addEventHandler(new osgWidget::KeyboardHandler(wm));
-  viewer->addEventHandler(new osgWidget::ResizeHandler(wm, appcamera));
-  viewer->addEventHandler(new osgWidget::CameraSwitchHandler(wm, appcamera));
-  viewer->addEventHandler(new osgViewer::StatsHandler());
-  viewer->addEventHandler(new osgViewer::WindowSizeHandler());
-  viewer->addEventHandler(new osgGA::StateSetManipulator(viewer->getCamera()->getOrCreateStateSet()));
+		viewer->getCamera()->setGraphicsContext(gc);
+    viewer->getCamera()->setViewport(0, 0, traits->width, traits->height);
 
-  //If --disableTextures, force disabling textures
-  if (disableTextures)
-  {
-    for (unsigned int ii = 0; ii < 4; ii++)
-    {
-#if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE)
-      viewer->getCamera()->getOrCreateStateSet()->setTextureMode(
-          ii, GL_TEXTURE_1D, osg::StateAttribute::OVERRIDE | osg::StateAttribute::OFF);
-#endif
-      viewer->getCamera()->getOrCreateStateSet()->setTextureMode(
-          ii, GL_TEXTURE_2D, osg::StateAttribute::OVERRIDE | osg::StateAttribute::OFF);
-      viewer->getCamera()->getOrCreateStateSet()->setTextureMode(
-          ii, GL_TEXTURE_3D, osg::StateAttribute::OVERRIDE | osg::StateAttribute::OFF);
-      viewer->getCamera()->getOrCreateStateSet()->setTextureMode(
-          ii, GL_TEXTURE_RECTANGLE, osg::StateAttribute::OVERRIDE | osg::StateAttribute::OFF);
-      viewer->getCamera()->getOrCreateStateSet()->setTextureMode(
-          ii, GL_TEXTURE_CUBE_MAP, osg::StateAttribute::OVERRIDE | osg::StateAttribute::OFF);
-    }
-  }
+    // Disable automatic computation of near and far plane
+    viewer->getCamera()->setComputeNearFarMode( osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR );
+    
+    viewer->realize();
 
-  wm->resizeAllWindows();
+    oculusViewer = new OculusViewer(viewer, oculusDevice);
+    oculusViewer->addChild(scene_builder->getRoot());
+    viewer->setSceneData(oculusViewer);
+    
+    // Add Oculus Keyboard Handler to only one view
+    viewer->addEventHandler(new OculusEventHandler(oculusDevice));
+	}
 
-  viewer->setSceneData(appgroup);
-
-  for (unsigned int j = 0; j < scene_builder->iauvFile.size(); j++)
-    for (unsigned int i = 0; i < scene_builder->iauvFile[j]->devices->all.size(); i++)
-      scene_builder->iauvFile[j]->devices->all.at(i)->setViewBuilder(this);
   return true;
+
 }
 void ViewBuilder::init()
 {
   OSG_INFO << "Creating application..." << std::endl;
 
-  if (fullScreenNum>=0)
-    viewer->setUpViewOnSingleScreen(fullScreenNum);
-  else
-    viewer->setUpViewInWindow(50, 50, static_cast<int>(wm->getWidth()), static_cast<int>(wm->getHeight()));
+  if(!oculus) // plnc
+  {
+    if (fullScreenNum>=0)
+      viewer->setUpViewOnSingleScreen(fullScreenNum);
+    else
+      viewer->setUpViewInWindow(50, 50, static_cast<int>(wm->getWidth()), static_cast<int>(wm->getHeight()));
+  }
 }

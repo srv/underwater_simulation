@@ -23,14 +23,28 @@
 #include "ConfigXMLParser.h"
 #include "SceneBuilder.h"
 
+//#include <uwsim/hmdcamera.h>
+//#include <uwsim/HMDCameraMP.h>
+#include <uwsim/oculus/oculusdevice.h>
+#include <uwsim/oculus/oculusviewer.h>
+#include "uwsim/oculus/oculuseventhandler.h"
+
+#include <osg/Camera>
+#include <osg/ShapeDrawable>
+
 class ViewBuilder
 {
 public:
   osg::ref_ptr<osgViewer::Viewer> viewer;
+  osg::ref_ptr<OculusViewer> oculusViewer;
+  osg::ref_ptr<OculusDevice> oculusDevice;
   boost::shared_ptr<osg::ArgumentParser> arguments;
   int fullScreenNum;
+  bool oculus;
 
 public:
+  osg::Camera* createHUDCamera( );
+
   osg::ref_ptr<osgWidget::WindowManager> wm;
   ViewBuilder(ConfigFile &config, SceneBuilder *scene_builder);
   ViewBuilder(ConfigFile &config, SceneBuilder *scene_builder, int *argc, char **argv);

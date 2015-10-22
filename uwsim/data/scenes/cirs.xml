@@ -53,11 +53,11 @@
     </showTrajectory>
   </simParams>
   <camera>
-    <freeMotion> 1 </freeMotion>
+    <freeMotion> 0 </freeMotion>
     <objectToTrack>girona500/base_link</objectToTrack>
     <fov> 60 </fov>
     <aspectRatio> 1.33 </aspectRatio>
-    <near> 0.1 </near>
+    <near> 1 </near>
     <far> 10000 </far>
     <position>
       <x>-5</x>
@@ -69,6 +69,8 @@
       <y>0 </y>
       <z>0 </z>
     </lookAt>
+    <oculus> 1 </oculus>
+    <windshield> 0 </windshield>
   </camera>
 
   <vehicle>
@@ -91,7 +93,7 @@
       <p>0</p>
       <y>0</y>
     </orientation>
-    <virtualCamera>
+<!--    <virtualCamera>
       <name>bowtech1</name>
       <relativeTo>part0</relativeTo>
       <resw> 320 </resw>
@@ -103,11 +105,11 @@
       </position>
       <orientation>
         <r>0</r>
-        <p>3.14</p>
+        <p>0</p>
         <y>1.57 </y>
       </orientation>
-      <!-- draws the FOV of the camera projected on the scene each 2 seconds -->
-      <!-- <showpath>2</showpath>  -->
+      draws the FOV of the camera projected on the scene each 2 seconds //comentar
+      <showpath>2</showpath>   //comentar
     </virtualCamera>
     <virtualCamera>
       <name>bowtech2</name>
@@ -121,15 +123,15 @@
       </position>  
       <orientation>
         <r>0</r>
-        <p>3.14</p>
+        <p>0</p>
         <y>1.57 </y>
       </orientation>
-    </virtualCamera>
+    </virtualCamera> -->
     <rangeSensor>
       <name>sonar</name>
       <relativeTo>part0</relativeTo>
       <range>10</range>
-      <visible>0</visible>
+      <visible>1</visible>
       <position>
         <x>-0.3</x>
         <y>0</y>
@@ -137,7 +139,7 @@
       </position>  
       <orientation>
         <r>0</r>
-        <p>-1.57</p>
+        <p>1.57</p>
         <y>0</y>
       </orientation>
     </rangeSensor>
@@ -206,7 +208,7 @@
       <std>0.0015</std>
     </dvlSensor>
 
-    <virtualRangeImage>
+<!--    <virtualRangeImage>
       <name>rangeImage</name>
       <relativeTo>part0</relativeTo>
       <resw> 320</resw>
@@ -218,7 +220,7 @@
       </position>  
       <orientation>
         <r>0</r>
-        <p>3.14</p>
+        <p>0</p>
         <y>1.57 </y>
       </orientation>
       <parameters>
@@ -242,7 +244,7 @@
         <z> 0 </z>
       </position>  
       <orientation>
-        <r>3.14</r>
+        <r>0</r>
         <p>0</p>
         <y>3.14 </y>
       </orientation>
@@ -250,7 +252,7 @@
       <finalAngle>60</finalAngle>
       <angleIncr>0.1</angleIncr>
       <range>10</range>
-    </multibeamSensor>
+    </multibeamSensor> -->
 
     <simulatedDevices>
       <echo>

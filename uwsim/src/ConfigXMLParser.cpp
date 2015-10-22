@@ -267,9 +267,6 @@ void ConfigFile::processShowTrajectory(const xmlpp::Node* node, ShowTrajectory &
       extractPositionOrColor(child, trajectory.color);
     else if (child->get_name() == "lineStyle")
       extractIntChar(child, trajectory.lineStyle);
-    else if (child->get_name() == "timeWindow"){
-      extractFloatChar(child, trajectory.timeWindow);
-    }
   }
 }
 
@@ -325,8 +322,6 @@ void ConfigFile::processVcam(const xmlpp::Node* node, Vcam &vcam)
     {
       extractStringChar(child, vcam.frameId);
     }
-    else if (child->get_name() == "fovy")
-      extractFloatChar(child, vcam.fov);
     else if (child->get_name() == "parameters")
     {
       vcam.parameters.reset(new Parameters());
@@ -502,8 +497,29 @@ void ConfigFile::processCamera(const xmlpp::Node* node)
       extractPositionOrColor(child, camPosition);
     else if (child->get_name() == "lookAt")
       extractPositionOrColor(child, camLookAt);
-    if (child->get_name() == "objectToTrack")
+    else if (child->get_name() == "objectToTrack")
       extractStringChar(child, vehicleToTrack);
+    else if (child->get_name() == "oculus")
+    {
+      extractIntChar(child, oculus);
+      if (oculus != 0 && oculus != 1)
+      {
+        osg::notify(osg::ALWAYS) << "ConfigFile::processCamera: oculus is not a binary value ( 0 1), using default value (1)"
+            << std::endl;
+        oculus = 1;
+      }
+    }
+    else if (child->get_name() == "windshield")
+    {
+      extractIntChar(child, windshield);
+      if (windshield != 0 && windshield != 1)
+      {
+        osg::notify(osg::ALWAYS) << "ConfigFile::processCamera: windshield is not a binary value ( 0 1), using default value (1)"
+            << std::endl;
+        windshield = 1;
+      }
+    }
+
   }
 }
 
@@ -1145,7 +1161,7 @@ void ConfigFile::processPhysicProperties(const xmlpp::Node* node, PhysicProperti
       {
         osg::notify(osg::ALWAYS) << "ConfigFile::PhysicProperties: isKinematic is not a binary value ( 0 1), using default value (0)"
             << std::endl;
-        freeMotion = 0;
+        pp.isKinematic = 0;
       }
     }
     else if (child->get_name() == "minAngularLimit")
@@ -1297,6 +1313,10 @@ void ConfigFile::processROSInterfaces(const xmlpp::Node* node)
     else if (child->get_name() == "RangeSensorToROSRange")
     {
       rosInterface.type = ROSInterfaceInfo::RangeSensorToROSRange;
+    }
+    else if(child->get_name()=="ObjectPickedToROS")
+    {
+ 	rosInterface.type=ROSInterfaceInfo::ObjectPickedToROS;
     }
     else if (child->get_name() == "ROSImageToHUD")
     {
@@ -1453,3 +1473,22 @@ ConfigFile::ConfigFile(const std::string &fName)
   }
 
 }
+
+void ConfigFile::processObjectPicked(const xmlpp::Node* node, rangeSensor &op){
+	xmlpp::Node::NodeList list = node->get_children();
+	for(xmlpp::Node::NodeList::iterator iter = list.begin(); iter != list.end(); ++iter){
+ 		xmlpp::Node* child=dynamic_cast<const xmlpp::Node*>(*iter);
+ 
+ 		if(child->get_name()=="position")
+ 			extractPositionOrColor(child,op.position);
+ 		else if(child->get_name()=="relativeTo")
+ 			extractStringChar(child,op.linkName);
+ 		else if(child->get_name()=="orientation")
+ 			extractOrientation(child,op.orientation);
+ 		else if(child->get_name()=="name")
+ 			extractStringChar(child,op.name);
+ 		else if(child->get_name()=="visible")
+ 			extractIntChar(child,op.visible);
+ 	}
+ }
+ 

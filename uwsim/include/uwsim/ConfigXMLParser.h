@@ -32,7 +32,7 @@ struct ROSInterfaceInfo
   {
     Unknown, ROSOdomToPAT, PATToROSOdom, ROSJointStateToArm, ArmToROSJointState, VirtualCameraToROSImage,
     RangeSensorToROSRange, ROSImageToHUD, ROSTwistToPAT, ROSPoseToPAT, ImuToROSImu, PressureSensorToROS, GPSSensorToROS,
-    DVLSensorToROS, RangeImageSensorToROSImage, multibeamSensorToLaserScan, SimulatedDevice, contactSensorToROS, WorldToROSTF
+    DVLSensorToROS, RangeImageSensorToROSImage, multibeamSensorToLaserScan, SimulatedDevice, contactSensorToROS, ObjectPickedToROS, WorldToROSTF
   } type_t;
   string subtype; //type of a SimulatedDevice
   std::map<std::string, std::string> values; //all configuration values for a SimulatedDevice
@@ -58,7 +58,6 @@ struct Vcam
   double showpath;
   double position[3], orientation[3];
   double baseLine; ///baseline for stereo cameras
-  double fov;
   boost::shared_ptr<Parameters> parameters;
   void init()
   {
@@ -80,9 +79,18 @@ struct Vcam
     parameters.reset();
     range = 0;
     bw = 0;
-    fov=50;
   }
 };
+
+struct ObjectPicked {
+  string name;
+  string linkName;
+  double position[3],orientation[3];
+  //double range;
+  int visible;
+  int link;
+  void init(){name="";linkName="";position[0]=0;position[1]=0;position[2]=0;orientation[0]=0;orientation[1]=0;orientation[2]=0;visible=0;}
+ };
 
 struct slProjector
 {
@@ -362,13 +370,11 @@ struct ShowTrajectory
   std::string target;
   double color[3];
   int lineStyle;
-  double timeWindow;
   void init()
   {
     target="";
     color[0]= 1; color[1]= 0; color[2] = 0;
     lineStyle=1;
-    timeWindow=-1;
   }
 };
 
@@ -428,6 +434,7 @@ public:
   void processROSInterface(const xmlpp::Node* node, ROSInterfaceInfo &rosInterface);
   void processROSInterfaces(const xmlpp::Node* node);
   void processXML(const xmlpp::Node* node);
+  void processObjectPicked(const xmlpp::Node* node, rangeSensor &op); 
 
   void processGeometry(urdf::Geometry * geometry, Geometry * geom);
   void processPose(urdf::Pose pose, double position[3], double rpy[3], double quat[4]);
@@ -443,7 +450,7 @@ public:
 public:
   double windx, windy, windSpeed, depth, reflectionDamping, waveScale, choppyFactor, crestFoamHeight,
          oceanSurfaceHeight, fogDensity;
-  int isNotChoppy, disableShaders, eye_in_hand, freeMotion, resw, resh, enablePhysics;
+  int isNotChoppy, disableShaders, eye_in_hand, freeMotion, resw, resh, enablePhysics, oculus, windshield;
   string arm, vehicleToTrack;
   double camPosition[3], camLookAt[3], fogColor[3], color[3], attenuation[3], offsetr[3], offsetp[3];
   double camFov, camAspectRatio, camNear, camFar;
