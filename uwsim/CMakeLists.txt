@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(uwsim)
 
-SET(OCULUS_SDK_ROOT_DIR "/home/ros/oculussdk")
-SET(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+#SET(OCULUS_SDK_ROOT_DIR "/home/ros/oculussdk")
+#SET(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
@@ -17,13 +17,14 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   underwater_sensor_msgs
   urdf
+  oculus_sdk
 )
 
 find_package(uwsim_osgocean REQUIRED)
 find_package(uwsim_osgworks REQUIRED)
 find_package(uwsim_osgbullet REQUIRED)
 find_package(uwsim_bullet REQUIRED)
-find_package(OculusSDK REQUIRED)
+#find_package(OculusSDK REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -104,9 +105,7 @@ src/BulletPhysics.cpp
 src/PhysicsBuilder.cpp
 src/OculusCameraManipulator.cpp
 src/oculus/oculusdevice.cpp
-#src/oculus/oculusdevicesdk.cpp
 src/oculus/oculuseventhandler.cpp
-#src/oculus/oculuseventhandlersdk.cpp
 src/oculus/oculushealthwarning.cpp
 src/oculus/oculusupdateslavecallback.cpp
 src/oculus/oculusviewconfig.cpp
@@ -121,11 +120,11 @@ target_link_libraries(uwsim_plugins_simdev ${catkin_LIBRARIES})
 
 message("OPENSCENEGRAPH_LIBRARIES= ${OPENSCENEGRAPH_LIBRARIES}")
 
-target_link_libraries(uwsim -g ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OSGOCEAN_LIBRARIES} ${OSGWORKS_LIBRARIES} ${OSGBULLET_LIBRARIES} ${BULLET_LIBRARIES} ${OPENSCENEGRAPH_LIBRARIES} ${LIBXML++_LIBRARIES} ${OCULUS_SDK_LIBRARIES} -lGLU udev Xinerama)
+target_link_libraries(uwsim -g ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OSGOCEAN_LIBRARIES} ${OSGWORKS_LIBRARIES} ${OSGBULLET_LIBRARIES} ${BULLET_LIBRARIES} ${OPENSCENEGRAPH_LIBRARIES} ${LIBXML++_LIBRARIES} -lGLU udev Xinerama -ldl)
 add_dependencies(uwsim underwater_sensor_msgs_gencpp)
 
 add_executable(uwsim_binary  src/main.cpp)
-target_link_libraries(uwsim_binary uwsim -g ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OSGOCEAN_LIBRARIES} ${OSGWORKS_LIBRARIES} ${OSGBULLET_LIBRARIES} ${BULLET_LIBRARIES} ${OPENSCENEGRAPH_LIBRARIES} ${LIBXML++_LIBRARIES} ${OCULUS_SDK_LIBRARIES} -lGLU udev Xinerama)
+target_link_libraries(uwsim_binary uwsim -g ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OSGOCEAN_LIBRARIES} ${OSGWORKS_LIBRARIES} ${OSGBULLET_LIBRARIES} ${BULLET_LIBRARIES} ${OPENSCENEGRAPH_LIBRARIES} ${LIBXML++_LIBRARIES} -lGLU udev Xinerama)
 
 add_executable(makeVehicleSurvey interface_examples/makeVehicleSurvey.cpp)
 target_link_libraries(makeVehicleSurvey uwsim ${catkin_LIBRARIES} ${Boost_LIBRARIES})
@@ -160,8 +159,8 @@ target_link_libraries(gotoRelativePose uwsim ${catkin_LIBRARIES} ${Boost_LIBRARI
 add_executable(setVehicleActuators interface_examples/setVehicleActuators.cpp)
 target_link_libraries(setVehicleActuators uwsim ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(oculus_viewer_example  src/oculus/viewerexample.cpp)
-target_link_libraries(oculus_viewer_example uwsim -g ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OSGOCEAN_LIBRARIES} ${OSGWORKS_LIBRARIES} ${OSGBULLET_LIBRARIES} ${BULLET_LIBRARIES} ${OPENSCENEGRAPH_LIBRARIES} ${LIBXML++_LIBRARIES} ${OCULUS_SDK_LIBRARIES} -lGLU udev Xinerama)
+#add_executable(oculus_viewer_example  src/oculus/viewerexample.cpp)
+#target_link_libraries(oculus_viewer_example ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OSGOCEAN_LIBRARIES} ${OSGWORKS_LIBRARIES} ${OSGBULLET_LIBRARIES} ${BULLET_LIBRARIES} ${OPENSCENEGRAPH_LIBRARIES} ${LIBXML++_LIBRARIES} -lGLU udev Xinerama)
 
 
 install(
